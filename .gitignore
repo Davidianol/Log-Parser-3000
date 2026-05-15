@@ -1,0 +1,8 @@
+.idea/
+.DS_Store
+env
+.env.local
+.env.*.local
+!data/.gitkeep
+tmp/
+data/log.zip

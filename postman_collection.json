@@ -1,0 +1,1108 @@
+{
+  "info": {
+    "name": "Log Parser — InfiniBand",
+    "description": "API тесты для микросервиса парсера логов InfiniBand. Запускать по порядку через Run Collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "log_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "node_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Parse",
+      "item": [
+        {
+          "name": "POST /api/parse/ — успешный парсинг",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит log_id', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('log_id');",
+                  "    pm.expect(json.log_id).to.be.a('number');",
+                  "    pm.expect(json.log_id).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is JSON', function() {",
+                  "    pm.response.to.have.header('Content-Type');",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "var json = pm.response.json();",
+                  "if (json && json.log_id) {",
+                  "    pm.collectionVariables.set('log_id', json.log_id);",
+                  "    console.log('log_id сохранён:', json.log_id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — файл не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 при несуществующем файле', function() {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит поле error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"nonexistent.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — пустое тело",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 при пустом теле', function() {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит поле error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Log",
+      "item": [
+        {
+          "name": "GET /api/log/{log_id} — успешно",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Лог содержит обязательные поля', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('filename');",
+                  "    pm.expect(json).to.have.property('status');",
+                  "    pm.expect(json).to.have.property('node_count');",
+                  "    pm.expect(json).to.have.property('uploaded_at');",
+                  "});",
+                  "",
+                  "pm.test('Статус лога — done', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('done');",
+                  "});",
+                  "",
+                  "pm.test('node_count равен 5 (из лога: 1 host + 4 switch)', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.node_count).to.eql(5);",
+                  "});",
+                  "",
+                  "pm.test('filename — log.zip', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.filename).to.eql('log.zip');",
+                  "});",
+                  "",
+                  "pm.test('error_message равен null', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.error_message).to.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/log/{{log_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "log",
+                "{{log_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/log/{log_id} — не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 для несуществующего лога', function() {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит поле error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/log/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "log",
+                "999999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Topology",
+      "item": [
+        {
+          "name": "GET /api/topology/{log_id} — успешно",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит nodes и groups (snake_case)', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('nodes');",
+                  "    pm.expect(json).to.have.property('groups');",
+                  "    pm.expect(json.nodes).to.be.an('array');",
+                  "    pm.expect(json.groups).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('nodes содержит 5 узлов (1 host + 4 switch)', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.nodes.length).to.eql(5);",
+                  "});",
+                  "",
+                  "pm.test('Присутствуют оба типа узлов: host (1) и switch (2)', function() {",
+                  "    var json = pm.response.json();",
+                  "    var types = json.nodes.map(function(n) { return n.node_type; });",
+                  "    pm.expect(types).to.include(1);",
+                  "    pm.expect(types).to.include(2);",
+                  "});",
+                  "",
+                  "pm.test('groups содержит host_active и switch_active', function() {",
+                  "    var json = pm.response.json();",
+                  "    var keys = json.groups.map(function(g) { return g.key; });",
+                  "    pm.expect(keys).to.include('host_active');",
+                  "    pm.expect(keys).to.include('switch_active');",
+                  "});",
+                  "",
+                  "pm.test('Каждая группа содержит key и node_guids (snake_case)', function() {",
+                  "    var json = pm.response.json();",
+                  "    json.groups.forEach(function(g) {",
+                  "        pm.expect(g).to.have.property('key');",
+                  "        pm.expect(g).to.have.property('node_guids');",
+                  "        pm.expect(g.node_guids).to.be.an('array');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('switch_active содержит 4 узла', function() {",
+                  "    var json = pm.response.json();",
+                  "    var sw = json.groups.find(function(g) { return g.key === 'switch_active'; });",
+                  "    pm.expect(sw).to.exist;",
+                  "    pm.expect(sw.node_guids.length).to.eql(4);",
+                  "});",
+                  "",
+                  "pm.test('Все node_guid начинаются с 0x', function() {",
+                  "    var json = pm.response.json();",
+                  "    json.nodes.forEach(function(n) {",
+                  "        pm.expect(n.node_guid).to.match(/^0x/);",
+                  "    });",
+                  "});",
+                  "",
+                  "// Сохраняем node_id первого узла (HOST_1, id=1)",
+                  "var json = pm.response.json();",
+                  "if (json && json.nodes && json.nodes.length > 0) {",
+                  "    pm.collectionVariables.set('node_id', json.nodes[0].id);",
+                  "    console.log('node_id сохранён:', json.nodes[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/topology/{{log_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topology",
+                "{{log_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/topology/{log_id} — не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 для несуществующего лога', function() {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/topology/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "topology",
+                "999999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Node",
+      "item": [
+        {
+          "name": "GET /api/node/{node_id} — успешно (HOST_1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Узел содержит все обязательные поля (snake_case)', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('log_id');",
+                  "    pm.expect(json).to.have.property('node_guid');",
+                  "    pm.expect(json).to.have.property('node_desc');",
+                  "    pm.expect(json).to.have.property('node_type');",
+                  "    pm.expect(json).to.have.property('num_ports');",
+                  "    pm.expect(json).to.have.property('system_image_guid');",
+                  "    pm.expect(json).to.have.property('port_guid');",
+                  "});",
+                  "",
+                  "pm.test('node_type валидный (1=CA, 2=Switch, 3=Router)', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect([1, 2, 3]).to.include(json.node_type);",
+                  "});",
+                  "",
+                  "pm.test('node_guid начинается с 0x', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.node_guid).to.match(/^0x/);",
+                  "});",
+                  "",
+                  "pm.test('num_ports > 0', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.num_ports).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/node/{{node_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "node",
+                "{{node_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/node/{node_id} — не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 для несуществующего узла', function() {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит поле error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/node/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "node",
+                "999999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Port",
+      "item": [
+        {
+          "name": "GET /api/port/{node_id} — успешно (HOST_1, 1 порт)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Ответ — массив портов', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "    pm.expect(json.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('Каждый порт содержит обязательные поля (snake_case)', function() {",
+                  "    var json = pm.response.json();",
+                  "    json.forEach(function(port) {",
+                  "        pm.expect(port).to.have.property('id');",
+                  "        pm.expect(port).to.have.property('node_id');",
+                  "        pm.expect(port).to.have.property('node_guid');",
+                  "        pm.expect(port).to.have.property('port_guid');",
+                  "        pm.expect(port).to.have.property('port_num');",
+                  "        pm.expect(port).to.have.property('port_state');",
+                  "        pm.expect(port).to.have.property('lid');",
+                  "        pm.expect(port).to.have.property('cap_msk');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('port_state в допустимом диапазоне [0-4]', function() {",
+                  "    var json = pm.response.json();",
+                  "    json.forEach(function(port) {",
+                  "        pm.expect(port.port_state).to.be.within(0, 4);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('cap_msk является числом', function() {",
+                  "    var json = pm.response.json();",
+                  "    json.forEach(function(port) {",
+                  "        pm.expect(port.cap_msk).to.be.a('number');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('Строковые поля (link_round_trip_latency, ooo_sl_mask) присутствуют если не N/A', function() {",
+                  "    var json = pm.response.json();",
+                  "    json.forEach(function(port) {",
+                  "        if (port.hasOwnProperty('link_round_trip_latency')) {",
+                  "            pm.expect(port.link_round_trip_latency).to.be.a('string');",
+                  "        }",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/port/{{node_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "port",
+                "{{node_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /api/port/{node_id} — не найден",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404 для несуществующего узла', function() {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/port/999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "port",
+                "999999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Negative — Broken Archives",
+      "item": [
+        {
+          "name": "POST /api/parse/ — невалидный zip (бинарный мусор)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при невалидном zip', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422, 500]);",
+                  "});",
+                  "pm.test('Ответ содержит error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"not_a_zip.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — пустой zip (0 файлов внутри)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при пустом архиве', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Ответ содержит error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"empty_archive.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — пустой файл лога внутри zip",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при пустом log-файле', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Ответ содержит error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_empty.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — нет секций (чистый мусор)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при файле без секций', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Ответ содержит error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_no_sections.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — незакрытая секция (нет END_NODES)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при незакрытой секции', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Ответ содержит error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_no_end_nodes.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — обрезанные колонки в START_PORTS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при обрезанных колонках', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Ответ содержит error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_truncated_columns.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — мусор в числовых полях (GARBAGE вместо int)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при мусорных числовых полях', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Ответ содержит error', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_garbage_fields.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — CRLF line endings (Windows)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 при Windows CRLF (парсер должен поддерживать)', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Ответ содержит log_id', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('log_id');",
+                  "    pm.expect(json.log_id).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_crlf.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — частичный лог (нет секции PORTS) — обязателен",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('4xx при отсутствии секции START_PORTS', function() {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "",
+                  "pm.test('Ответ содержит error с упоминанием PORTS', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "    pm.expect(json.error.toLowerCase()).to.include('port');",
+                  "});",
+                  "",
+                  "pm.test('log_id возвращается даже при ошибке (для трекинга)', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('log_id');",
+                  "    pm.expect(json.log_id).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_no_ports.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — дублирующаяся секция START_NODES",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Поведение зависит от реализации: ошибка или merge — оба ответа допустимы",
+                  "pm.test('Ответ 2xx или 4xx (не 5xx/panic)', function() {",
+                  "    pm.expect(pm.response.code).to.be.within(200, 499);",
+                  "});",
+                  "pm.test('Ответ содержит либо log_id либо error', function() {",
+                  "    var json = pm.response.json();",
+                  "    var hasLogId = json.hasOwnProperty('log_id');",
+                  "    var hasError = json.hasOwnProperty('error');",
+                  "    pm.expect(hasLogId || hasError).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_duplicate_section.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /api/parse/ — минимальный валидный лог (smoke)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 при минимальном валидном логе', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Ответ содержит log_id', function() {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('log_id');",
+                  "    pm.expect(json.log_id).to.be.a('number');",
+                  "    pm.expect(json.log_id).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"path\": \"log_minimal.zip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/parse/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "parse",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

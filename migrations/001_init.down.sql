@@ -1,0 +1,6 @@
+DROP TABLE IF EXISTS nodes_info;
+DROP TABLE IF EXISTS ports;
+DROP TABLE IF EXISTS nodes;
+DROP TABLE IF EXISTS logs;
+DROP TABLE IF EXISTS topology_groups;
+DROP TABLE IF EXISTS topology_group_nodes;
